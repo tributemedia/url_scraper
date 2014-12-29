@@ -1,0 +1,365 @@
+<?php
+
+
+function url_scraper_menu() {
+    $items['admin/config/system/url_scraper'] = array(
+        'title' => 'URL Scraper',
+        'description' => 'Check the URLS from an existing website and create redirects for them on their current website.',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('url_scraper_url_form'),
+        'access arguments' => array('access content'),
+        'type' => MENU_NORMAL_ITEM,
+    );
+    $items['ajax/start_crawler'] = array(
+        'title' => 'Ajax Results',
+        'page callback' => 'start_crawler',
+        'access arguments' => array('access content'),
+    );
+    $items['ajax/save_results'] = array(
+        'title' => 'Ajax Results',
+        'page callback' => 'save_results',
+        'access arguments' => array('access content'),
+    );
+    $items['ajax/update_results'] = array(
+        'title' => 'Ajax Results',
+        'page callback' => 'update_results',
+        'access arguments' => array('access content'),
+    );
+    $items['ajax/start_over'] = array(
+        'title' => 'Ajax Results',
+        'page callback' => 'start_over',
+        'access arguments' => array('access content'),
+    );
+    $items['ajax/sort'] = array(
+        'title' => 'Ajax Sort Results',
+        'page callback' => 'sort_items',
+        'access arguments' => array('access content'),
+    );
+    $items['ajax/alias_autocomplete'] = array(
+        'title' => 'Ajax Alias AutoComplete',
+        'page callback' => 'alias_autocomplete',
+        'access arguments' => array('access content'),
+    );
+    
+    return $items;
+}
+
+function sort_items() {
+    if(isset($_GET['sort'])) { $sort = $_GET['sort']; }
+    if(isset($_GET['by'])) { $by = $_GET['by']; }
+    if(isset($_GET['domain'])) { $domainName = $_GET['domain']; }
+    
+    if((isset($sort)) && (isset($by)) && (isset($by))) {
+        return drupal_json_output(done_results($domainName, $sort, $by));
+    } else {
+        return drupal_json_output(done_results($domainName, $sort = NULL, $by = NULL));
+    }
+}
+function alias_autocomplete() {
+$searchTerm = $_GET['term'];
+
+    $query = db_query("SELECT alias,source from url_alias where alias like '%$searchTerm%'")->fetchAll();
+    foreach($query as $items) {
+        $item[] = $items->source.'|'.$items->source." ---> ".$items->alias;
+    }
+    
+return drupal_json_output($item);
+
+}
+
+function start_over() {
+    if(isset($_GET['process'])) { $process = $_GET['process']; }
+    if($process = 'start_over') {
+        $query = db_truncate('url_redirect')->execute();
+        $query = db_update('url_redirect_info')
+        ->fields(array(
+           'saved' => '0',
+        ))->condition('saved', '1')->execute();
+    }
+}
+function update_results() {
+    if(isset($_POST['EMAIL'])) { $email = $_POST['EMAIL']; }
+    if(isset($_POST['ignore'])) { $ignore = $_POST['ignore']; }
+    if(isset($_GET['process'])) { $process = $_GET['process']; }
+    if(isset($_POST['URL'])) { $domainName = str_replace('www.', '', parse_url($_POST['URL'], PHP_URL_HOST)); }
+    if(isset($_POST['current'])) { $current = $_POST['current']; }
+    if(isset($_POST['redirect'])) { $redirect = $_POST['redirect']; }
+    if(isset($_POST['title'])) { $title = $_POST['title']; }
+    if(isset($_POST['h1'])) { $h1 = $_POST['h1']; }
+    if(isset($_POST['itemID'])) { $id = $_POST['itemID']; }
+    
+    $newArray = array_map(function ($current , $redirect, $title, $h1, $id) {
+    	return array(
+    		'currentURL' => $current,
+    		'redirectURL' => $redirect,
+        'title' => $title,
+        'h1' => $h1,
+    		'id' => $id,
+    	);
+    }, $current, $redirect, $title, $h1, $id);
+
+    if($ignore) {
+        foreach($ignore as $items) {
+            $query = db_query("DELETE from url_redirect where id=$items")->execute();
+        }
+    }
+    
+    if($process == 'update') {
+        foreach($newArray as $data) {
+            $title = $data['title'];
+            $id = $data['id'];
+            $h1 = $data['h1'];
+            $currentURL = $data['currentURL'];
+            $redirectURL = $data['redirectURL'];
+            
+            $query = db_update('url_redirect')
+            ->fields(Array(
+                'old_url' => $currentURL,
+                'title' => $title,
+                'h1' => $h1,
+                'new_url' => $redirectURL,
+            ))->condition('id', $id)->execute();
+        }
+    }
+    return drupal_json_output(done_results($domainName, $sort = NULL, $by = NULL));
+}
+
+function save_results() {
+    if(isset($_POST['EMAIL'])) { $email = $_POST['EMAIL']; }
+    if(isset($_POST['ignore'])) { $ignore = $_POST['ignore']; }
+    if(isset($_GET['process'])) { $process = $_GET['process']; }
+    if(isset($_POST['URL'])) { $domainName = str_replace('www.', '', parse_url($_POST['URL'], PHP_URL_HOST)); }
+    if(isset($_POST['current'])) { $current = $_POST['current']; }
+    if(isset($_POST['redirect'])) { $redirect = $_POST['redirect']; }
+    if(isset($_POST['title'])) { $title = $_POST['title']; }
+    if(isset($_POST['h1'])) { $h1 = $_POST['h1']; }
+    if(isset($_POST['itemID'])) { $id = $_POST['itemID']; }
+    
+    $newArray = array_map(function ($current , $redirect, $title, $h1, $id) {
+    	return array(
+    		'currentURL' => $current,
+    		'redirectURL' => $redirect,
+        'title' => $title,
+        'h1' => $h1,
+    		'id' => $id,
+    	);
+    }, $current, $redirect, $title, $h1, $id);
+
+    if($process == 'save') {
+        foreach($newArray as $data) {
+            $title = $data['title'];
+            $id = $data['id'];
+            $h1 = $data['h1'];
+            $currentURL = $data['currentURL'];
+            $redirectURL = $data['redirectURL'];
+        
+            if((!in_array($id, $ignore))) {
+                $query = db_insert('url_redirect')
+                ->fields(Array(
+                    'old_url' => $currentURL,
+                    'title' => $title,
+                    'h1' => $h1,
+                    'new_url' => $redirectURL,
+                ))->execute();
+            }
+        }
+        $query = db_query("UPDATE url_redirect_info set saved='1'")->execute();
+    }
+}
+function start_crawler() {
+
+    if(isset($_GET['url'])) { $url = $_GET['url']; }
+    if(isset($_GET['email'])) { $email = $_GET['email']; }
+    if(isset($_GET['process'])) { $process = $_GET['process']; }
+
+    if(filter_var($url, FILTER_VALIDATE_URL)) {
+        if(file_get_contents($url)) {
+            // URL is valid. Update url and notification email in database.
+            $query = db_truncate('url_redirect_info')->execute();
+            $query = db_insert('url_redirect_info')
+            ->fields(array(
+                'url' => $url,
+                'notification_email' => $email,
+                'saved' => '0',
+            ))->execute();
+            //Tell Crawler server to start crawling the valid url.
+            drupal_add_library('system', 'ui.autocomplete');
+            $start = file_get_contents('http://links.tributemedia.com/scrapper.php?url='.$url.'&email='.$email.'&process='.$process);
+            return drupal_json_output($start);
+        } else { return drupal_json_output('<div class="red-message">You must enter a valud url.</div>'); }
+    } else { return drupal_json_output('<div class="red-message">You must enter a valid url.</div>'); }     
+}
+function url_scraper_url_form_submit($form, &$form_state ) {
+
+    $crawlURL = $form_state['input']['URL'];
+    $current_urlArray = $form_state['input']['current'];
+    $redirect_urlArray = $form_state['input']['redirect'];
+    
+    
+    $urlsArray = array_map(function ($current_urlArray , $redirect_urlArray) {
+    	return array(
+    		'source' => $redirect_urlArray,
+        'alias' => trim($current_urlArray, '/'),
+    	);
+    }, $current_urlArray, $redirect_urlArray);
+  
+    foreach($urlsArray as $data) {
+        var_dump('select pid from url_alias where alias="'.$data['alias'].'"');
+        $alias = $data['alias'];
+        $query = db_query("select pid from url_alias where alias='$alias'")->fetchAll();
+        if($query) {
+            foreach($query as $pids) {
+                path_delete($pids->pid);
+            }
+        drupal_set_message('Alias delete for '.$data['source'].' to '.$data['alias'].' deleted because an alias already exists for this path.', 'error');
+        }
+        path_save($data);
+        drupal_set_message('Alias created for '.$data['source'].' to '.$data['alias'], 'status');
+    }   
+}
+function url_scraper_url_form($form, &$form_state) {
+
+
+    global $user;
+    $email = $user->mail;
+    drupal_add_library('system', 'ui.autocomplete');
+    drupal_add_js(drupal_get_path('module', 'url_scraper') .'/url_scraper.js');
+    drupal_add_css(drupal_get_path('module', 'url_scraper') .'/url_scraper.css');
+    $query = db_query("select url, notification_email from url_redirect_info")->fetchAll();
+    if(isset($query['0']->url)) {
+        $default_url = $query['0']->url;
+        $domainName = str_replace('www.', '', parse_url($default_url, PHP_URL_HOST));
+    } else {
+        $default_url = 'http://www.';
+    }
+    if(isset($query['0']->notification_email)) {
+        $default_email = $query['0']->notification_email;
+    } else {
+        $default_email = 'support@tributemedia.com';
+    }
+    
+    $resultsSaved = db_query("SELECT saved from url_redirect_info where saved='1'")->fetchAll();
+    if($resultsSaved) {
+        $results = done_results($domainName, $sort = NULL, $by = NULL);
+        $done = true;
+    }
+    
+    $form['URL']['markup'] = array(
+        '#markup' => '<div class="form_info">Enter the current URL to the website you want to crawl, then click "Crawl" to generate a list of URLS.</div>',
+    );
+    $form['URL']['URL'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Old website URL',
+        '#description' => t('Type in the url of the old website. Make sure the url is in this format: www.domain.com'),
+        '#default_value' => $default_url,
+    );
+    $form['EMAIL'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Notification Email',
+        '#description' => t('Depending on how large the site is this can take an hour or so to run. If you would like to be notified by email when the scan is complete please add your email address'),
+        '#default_value' => $default_email,
+    );
+
+    if(isset($done)) {
+        $form['button1']['markup'] = array(
+            '#markup' => '<button class="start_over">Start Over</button>',  
+        );
+        $form['replace_container'] = array(
+            '#prefix' => '<div id="urlcontainer">'.$results,
+            '#suffix' => '</div>',
+        );
+        $form['button2']['markup'] = array(
+            '#markup' => '<button class="update_links">Update Links</button>',  
+        );
+    } else {
+        $form['button1']['markup'] = array(
+            '#markup' => '<button type="button" class="start_crawl">Start Crawler</button>',  
+        );
+        $form['button1q']['markup'] = array(
+            '#markup' => '<button type="button" class="get_links">Get Links</button>',  
+        );
+        $form['replace_container'] = array(
+            '#prefix' => '<div id="urlcontainer">',
+            '#suffix' => '</div>',
+        );
+        $form['button2']['markup'] = array(
+          '#markup' => '<button class="save_links">Save Links</button>',  
+        );
+    }
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Create Redirects',
+    );
+    $form['button15']['markup'] = array(
+            '#markup' => '<button class="crawl_again">Crawl Again - This will delete everything from the cralwer server and start the scan over</button>',
+    );
+
+    return $form;
+    
+}
+
+function done_results($domainName, $sort, $by) {
+    
+    if((isset($by)) && (isset($sort))) {
+        if($sort == "ASC") {
+            $new_sort = "DESC";
+        } elseif ($sort == 'DESC') {
+            $new_sort = "ASC";
+        }
+        if($by == 'old_url') { $old_color = '#bebebe'; } elseif ($by == "title") { $title_color = '#bebebe'; } elseif ($by == 'h1') { $h1_color = '#bebebe'; } elseif ($by == 'new_url') { $new_color = '#bebebe'; }
+    } else {
+        $sort = 'ASC';
+        $by = 'title';
+        $new_sort = 'ASC';
+    }
+
+    
+    drupal_add_library('system', 'ui.autocomplete');
+    $items = module_invoke_all('menu');
+    drupal_alter('menu', $items);
+    foreach ($items as $path => $info) {
+        $paths[] = preg_replace('/%([a-z0-9_]*)/i', '*', $path);
+    }
+
+    $query = db_select('url_redirect', 'n')
+    ->fields('n')
+    ->orderBy($by, $sort);
+    
+    $result = $query->execute();
+
+    
+    $html  = '<div class="scrapper-container">';
+    $html .=    '<table>';
+    $html .=        '<tr class="scrapper-header">';
+    $html .=            '<td class="header-cat s-row i-url first" data-sort="'.$new_sort.'" data-by="old_url">URL -> www.'.$domainName.'/</td>';
+    $html .=            '<td class="header-cat s-row i-title" data-sort="'.$new_sort.'" data-by="title">Title</td>';
+    $html .=            '<td class="header-cat s-row i-h1" data-sort="'.$new_sort.'" data-by="h1">H1</td>';
+    $html .=            '<td class="header-cat s-row i-redirect" data-sort="'.$new_sort.'" data-by="new_url">Redirect To</td>';
+    $html .=            '<td class="header-cat s-row i-options last">Ignore</td>';
+    $html .=        '</tr><!-- /scrapper-header -->';
+    
+    $i = 0;
+    $last = $result->rowCount();
+    while($data = $result->fetchAssoc()) {
+
+        if($i == 0) { $class = 'first-row '; } elseif ($i == $last -1) { $class = 'last-row '; } else { $class = ''; }  
+        $html .=        '<tr class="'.$class.'item-row">';
+        $html .=            '<td bgcolor="'.@$old_color.'" class="scrapper-item s-row i-url first"><input type="text" value="'.$data['old_url'].'" name="current[]" readonly="readonly"></td>';
+        $html .=            '<td bgcolor="'.@$title_color.'" class="scrapper-item s-row i-title"><!--<input class="lookliketext" type="text" value="'.$data['title'].'" name="title[]" readonly="readonly">--><textarea class="lookliketext" name="title[]" readonly>'.$data['title'].'</textarea></td>';
+        $html .=            '<td bgcolor="'.@$h1_color.'" class="scrapper-item s-row i-h1"><input class="lookliketext" type="text" value="'.$data['h1'].'" name="h1[]" readonly="readonly"></td>';
+        $html .=            '<td bgcolor="'.@$new_color.'" class="scrapper-item s-row i-redirect"><input class="aliasList" type="text" name="redirect[]" value="'.$data['new_url'].'"></td>';
+        $html .=            '<td class="scrapper-item s-row i-options last"><input type="checkbox" name="ignore[]" value="'.$data['id'].'"></td>';
+        $html .=            '<input type="hidden" name="itemID[]" value="'.$data['id'].'">';
+        $html .=        '</tr>';
+        $i++;
+    }
+    $html .= '<input type="hidden" name="domain" value="'.$domainName.'">';
+    $html .= '</table></div><!-- /scrapper-container -->';
+    
+   
+   return $html;
+}   
+
+
+?>
