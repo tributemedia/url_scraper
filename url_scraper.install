@@ -1,0 +1,84 @@
+<?php
+
+function url_scraper_schema() {
+    $schema['url_redirect_info'] = array (
+        'description' => 'Table to store temporary date from the URL Scraper',
+        'fields' => array(
+            'url' => array(
+                'description' => 'URL of site crawled',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+            'notification_email' => array(
+                'description' => 'Email to notify when scan is complete.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => 'support@tributemedia.com',
+            ),
+            'saved' => array(
+                'description' => 'Data been saved Locally',
+                'type' => 'int',
+                'length' => 1,
+                'not null' => TRUE,
+                'default' => '0',
+            ),
+        ),
+    );
+    $schema['url_redirect'] = array(
+        'description' => 'Table to store temporary data from the URL Scraper',
+        'fields' => array(
+            'id' => array(
+                'description' => 'Unique ID',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'old_url' => array(
+                'description' => 'Old URL path',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+            'title' => array(
+                'description' => 'Title of URL path',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => FALSE,
+                'default' => '',
+            ),
+            'h1' => array(
+                'description' => 'First H1 from url',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => FALSE,
+                'default' => '',
+            ),
+            'new_url' => array(
+                'description' => 'Path to redirect old URL to',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => FALSE,
+                'default' => '',
+            ),
+        ),
+        'unique keys' => array(
+            'id' => array('id'),
+        ),
+        'primary key' => array('id'),
+    );
+    
+    return $schema;
+}
+function url_scraper_install() {
+    drupal_install_schema('url_scraper');
+}
+
+function url_scraper_uninstall() {
+    drupal_uninstall_schema('url_scraper');
+}
+
+?>
