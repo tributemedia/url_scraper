@@ -1,0 +1,5 @@
+name = URL Scraper
+description = Scrape a url and automatically create redirect urls to match their old website.
+core = 7.x
+dependencies[] = redirect
+package = URL Scraper
