@@ -103,3 +103,10 @@ ul.ui-menu li.ui-menu-item:hover {
 }
 ul.ui-menu li.ui-menu-item a:hover {
     color:#ffffff;
+}
+.form_info {
+    border:1px solid #cccccc;
+    padding:10px;
+    background:#ebebeb;
+    margin-bottom:10px;
+}
