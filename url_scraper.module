@@ -39,8 +39,7 @@ function url_scraper_menu() {
         'title' => 'Ajax Alias AutoComplete',
         'page callback' => 'alias_autocomplete',
         'access arguments' => array('access content'),
-    );
-    
+    ); 
     return $items;
 }
 
