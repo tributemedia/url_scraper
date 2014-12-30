@@ -1,6 +1,5 @@
 <?php
 
-
 function url_scraper_menu() {
     $items['admin/config/system/url_scraper'] = array(
         'title' => 'URL Scraper',
@@ -54,16 +53,15 @@ function sort_items() {
         return drupal_json_output(done_results($domainName, $sort = NULL, $by = NULL));
     }
 }
+
 function alias_autocomplete() {
 $searchTerm = $_GET['term'];
 
     $query = db_query("SELECT alias,source from url_alias where alias like '%$searchTerm%'")->fetchAll();
     foreach($query as $items) {
         $item[] = $items->source.'|'.$items->source." ---> ".$items->alias;
-    }
-    
+    } 
 return drupal_json_output($item);
-
 }
 
 function start_over() {
@@ -76,6 +74,7 @@ function start_over() {
         ))->condition('saved', '1')->execute();
     }
 }
+
 function update_results() {
     if(isset($_POST['EMAIL'])) { $email = $_POST['EMAIL']; }
     if(isset($_POST['ignore'])) { $ignore = $_POST['ignore']; }
@@ -165,6 +164,7 @@ function save_results() {
         $query = db_query("UPDATE url_redirect_info set saved='1'")->execute();
     }
 }
+
 function start_crawler() {
 
     if(isset($_GET['url'])) { $url = $_GET['url']; }
@@ -188,6 +188,7 @@ function start_crawler() {
         } else { return drupal_json_output('<div class="red-message">You must enter a valud url.</div>'); }
     } else { return drupal_json_output('<div class="red-message">You must enter a valid url.</div>'); }     
 }
+
 function url_scraper_url_form_submit($form, &$form_state ) {
 
     $crawlURL = $form_state['input']['URL'];
@@ -216,8 +217,8 @@ function url_scraper_url_form_submit($form, &$form_state ) {
         drupal_set_message('Alias created for '.$data['source'].' to '.$data['alias'], 'status');
     }   
 }
-function url_scraper_url_form($form, &$form_state) {
 
+function url_scraper_url_form($form, &$form_state) {
 
     global $user;
     $email = $user->mail;
@@ -293,9 +294,7 @@ function url_scraper_url_form($form, &$form_state) {
     $form['button15']['markup'] = array(
             '#markup' => '<button class="crawl_again">Crawl Again - This will delete everything from the cralwer server and start the scan over</button>',
     );
-
-    return $form;
-    
+    return $form;    
 }
 
 function done_results($domainName, $sort, $by) {
@@ -312,8 +311,7 @@ function done_results($domainName, $sort, $by) {
         $by = 'title';
         $new_sort = 'ASC';
     }
-
-    
+  
     drupal_add_library('system', 'ui.autocomplete');
     $items = module_invoke_all('menu');
     drupal_alter('menu', $items);
@@ -326,8 +324,7 @@ function done_results($domainName, $sort, $by) {
     ->orderBy($by, $sort);
     
     $result = $query->execute();
-
-    
+  
     $html  = '<div class="scrapper-container">';
     $html .=    '<table>';
     $html .=        '<tr class="scrapper-header">';
@@ -356,9 +353,6 @@ function done_results($domainName, $sort, $by) {
     $html .= '<input type="hidden" name="domain" value="'.$domainName.'">';
     $html .= '</table></div><!-- /scrapper-container -->';
     
-   
-   return $html;
+		return $html;
 }   
-
-
 ?>

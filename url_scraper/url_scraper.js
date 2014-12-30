@@ -32,29 +32,29 @@ Drupal.behaviors.projects_mod = {
 
      
 function autocomplete() {
-            $(this).autocomplete({
-              	source: function( request, response ) {
-                    $.ajax({
-                        url : '/ajax/alias_autocomplete',
-                        dataType: "json",
-                        data: {
-                          term: request.term,
-                        },
-                        success: function( data ) {
-                            response( $.map( data, function( item ) {
-                                var code = item.split("|");
-                                return {
-                                    label: code[1],
-                                    value: code[0],
-                                    data: item
-                                }
-                            }));
-                        }
-                    });
+    $(this).autocomplete({
+       	source: function( request, response ) {
+            $.ajax({
+                url : '/ajax/alias_autocomplete',
+                dataType: "json",
+                data: {
+                    term: request.term,
                 },
-                autoFocus: true,
-                minLength: 0      	
+                success: function( data ) {
+                    response( $.map( data, function( item ) {
+                        var code = item.split("|");
+                        return {
+                            label: code[1],
+                            value: code[0],
+                            data: item
+                        }
+                    }));
+                }
             });
+        },
+        autoFocus: true,
+        minLength: 0      	
+    });
 }
 
         // Start the Link Crawler
