@@ -32,29 +32,29 @@ Drupal.behaviors.projects_mod = {
 
      
 function autocomplete() {
-    $(this).autocomplete({
-       	source: function( request, response ) {
-            $.ajax({
-                url : '/ajax/alias_autocomplete',
-                dataType: "json",
-                data: {
-                    term: request.term,
-                },
-                success: function( data ) {
-                    response( $.map( data, function( item ) {
-                        var code = item.split("|");
-                        return {
-                            label: code[1],
-                            value: code[0],
-                            data: item
+            $(this).autocomplete({
+              	source: function( request, response ) {
+                    $.ajax({
+                        url : '/ajax/alias_autocomplete',
+                        dataType: "json",
+                        data: {
+                          term: request.term,
+                        },
+                        success: function( data ) {
+                            response( $.map( data, function( item ) {
+                                var code = item.split("|");
+                                return {
+                                    label: code[1],
+                                    value: code[0],
+                                    data: item
+                                }
+                            }));
                         }
-                    }));
-                }
+                    });
+                },
+                autoFocus: true,
+                minLength: 0      	
             });
-        },
-        autoFocus: true,
-        minLength: 0      	
-    });
 }
 
         // Start the Link Crawler
@@ -135,6 +135,7 @@ function autocomplete() {
                 success: function(data) {
                     $('#urlcontainer').html(data);
                     $("#urlcontainer input.aliasList").each(autocomplete);
+                    alert('Your results have been saved. If you are happy with them you can click "Create Redirects" at the bottom of the page to complete the process. If not you are safe to finish or come back at a later time.');
                 }
             });
             return false;

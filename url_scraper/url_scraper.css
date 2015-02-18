@@ -110,3 +110,20 @@ ul.ui-menu li.ui-menu-item a:hover {
     background:#ebebeb;
     margin-bottom:10px;
 }
+button.update_links {
+    background: none repeat scroll 0 0 red;
+    border: 2px solid black;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 20px;
+    padding: 5px;
+    position: fixed;
+    right: 36px;
+    bottom: 40px;
+    cursor:pointer;
+}
+button.update_links:hover {
+    background:#ffffff;
+    color: red;
+    cursor:pointer;
+}
