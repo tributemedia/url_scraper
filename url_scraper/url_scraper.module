@@ -204,18 +204,21 @@ function url_scraper_url_form_submit($form, &$form_state ) {
     }, $current_urlArray, $redirect_urlArray);
   
     foreach($urlsArray as $data) {
-        var_dump('select pid from url_alias where alias="'.$data['alias'].'"');
-        $alias = $data['alias'];
-        $query = db_query("select pid from url_alias where alias='$alias'")->fetchAll();
-        if($query) {
-            foreach($query as $pids) {
-                path_delete($pids->pid);
-            }
-        drupal_set_message('Alias delete for '.$data['source'].' to '.$data['alias'].' deleted because an alias already exists for this path.', 'error');
-        }
-        path_save($data);
-        drupal_set_message('Alias created for '.$data['source'].' to '.$data['alias'], 'status');
-    }   
+				$alias = $data['alias'];
+				$source = $data['source'];
+				$redirect = new stdClass();
+				redirect_object_prepare(
+						$redirect, array(
+								'source' => $alias,
+								'source_options' => array(),
+								'redirect' => $source,
+								'redirect_options' => array(),
+								'language' => LANGUAGE_NONE,
+						)
+				);
+				redirect_save($redirect);
+				drupal_set_message('Redirect created for '.$data['source'].' to '.$data['alias'], 'status');
+    }
 }
 
 function url_scraper_url_form($form, &$form_state) {
